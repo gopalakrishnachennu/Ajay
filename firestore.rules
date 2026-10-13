@@ -1,10 +1,15 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function owner() {
+    function superAdmin() {
       return request.auth != null
         && request.auth.token.email == 'gopalakrishnachennu@gmail.com'
         && request.auth.token.email_verified == true;
+    }
+    function admin() {
+      return superAdmin() || (request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true);
     }
     function published(formId) {
       return get(/databases/$(database)/documents/forms/$(formId)).data.status == 'published';
@@ -18,19 +23,19 @@ service cloud.firestore {
       return request.auth != null && resource.data.ownerUid == request.auth.uid;
     }
     match /forms/{formId} {
-      allow get: if owner() || resource.data.status == 'published';
-      allow list: if owner();
-      allow create, update: if owner();
+      allow get: if admin() || resource.data.status == 'published';
+      allow list: if admin();
+      allow create, update: if admin();
       allow delete: if false;
     }
     match /links/{linkId} {
-      allow get: if owner() || published(resource.data.formId);
-      allow list: if owner();
-      allow create, update: if owner();
+      allow get: if admin() || published(resource.data.formId);
+      allow list: if admin();
+      allow create, update: if admin();
       allow delete: if false;
     }
     match /submissions/{submissionId} {
-      allow get, list, update: if owner();
+      allow get, list, update: if admin();
       allow create: if request.resource.data.keys().hasOnly(['formId','linkId','answers','followUp','note','createdAt','updatedAt'])
         && request.resource.data.formId is string
         && request.resource.data.linkId is string
@@ -44,8 +49,8 @@ service cloud.firestore {
       allow delete: if false;
     }
     match /applications/{applicationId} {
-      allow get: if owner() || applicationOwner();
-      allow list: if owner();
+      allow get: if admin() || applicationOwner();
+      allow list: if admin();
       allow create: if request.auth != null
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.keys().hasOnly([
@@ -72,19 +77,19 @@ service cloud.firestore {
           return request.auth != null
             && get(/databases/$(database)/documents/applications/$(applicationId)).data.ownerUid == request.auth.uid;
         }
-        allow get, list: if owner() || parentOwned();
+        allow get, list: if admin() || parentOwned();
         allow create, update: if parentOwned();
         allow delete: if false;
       }
     }
     match /form18Config/{configId} {
       allow get: if true;
-      allow list: if owner();
-      allow create, update: if owner();
+      allow list: if admin();
+      allow create, update: if admin();
       allow delete: if false;
     }
     match /events/{eventId} {
-      allow get, list: if owner();
+      allow get, list: if admin();
       allow create: if request.resource.data.keys().hasOnly(['formId','linkId','type','createdAt'])
         && request.resource.data.formId is string
         && request.resource.data.linkId is string
@@ -93,8 +98,24 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time;
       allow update, delete: if false;
     }
+    match /admins/{adminId} {
+      allow get: if superAdmin() || (request.auth != null && request.auth.uid == adminId);
+      allow list, create, update: if superAdmin();
+      allow delete: if false;
+    }
+    match /adminLogins/{loginId} {
+      allow get, list: if superAdmin();
+      allow create: if admin()
+        && request.resource.data.keys().hasOnly(['uid','username','role','createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.username is string
+        && request.resource.data.role in ['admin','super_admin']
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
     match /audit/{auditId} {
-      allow get, list, create: if owner();
+      allow get, list: if superAdmin();
+      allow create: if admin();
       allow update, delete: if false;
     }
     match /{document=**} {

@@ -1,35 +1,48 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, writeBatch, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { getStorage, ref, getBlob, getDownloadURL } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js';
 
-const app = initializeApp({
+const firebaseConfig={
   apiKey: 'AIzaSyDqa90otd4FEnYIys2dCV-zwtesCNxhzqI',
   authDomain: 'ajaychevula-d2a22.firebaseapp.com',
   projectId: 'ajaychevula-d2a22',
   storageBucket: 'ajaychevula-d2a22.firebasestorage.app',
   appId: '1:396367674243:web:bceb0a4c279959c29b94b6'
-});
+};
+const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app, 'gs://ajaychevula-d2a22.firebasestorage.app');
 const ownerEmail = 'gopalakrishnachennu@gmail.com';
-export const ready = new Promise(resolve => onAuthStateChanged(auth, () => resolve(), () => resolve()));
+let session=null;
+const usernameToEmail=username=>`${String(username||'').trim().toLowerCase().replace(/[^a-z0-9._-]/g,'')}@campaignos.local`;
+async function refreshSession(){
+  const user=auth.currentUser;
+  if(!user){session=null;return null;}
+  if(user.email===ownerEmail&&user.emailVerified){session={uid:user.uid,email:user.email,username:'Owner',role:'super_admin',isSuperAdmin:true};return session;}
+  const snap=await getDoc(doc(db,'admins',user.uid));
+  if(!snap.exists()||snap.data().active!==true){await signOut(auth);session=null;throw Object.assign(new Error('This admin account is not active.'),{status:401});}
+  session={uid:user.uid,email:user.email,username:snap.data().username||user.email,role:'admin',isSuperAdmin:false};return session;
+}
+export const ready = new Promise(resolve => onAuthStateChanged(auth, async () => { try{await refreshSession();}catch{}resolve(); }, () => resolve()));
 const uid = () => auth.currentUser;
-const denied = () => Object.assign(new Error('Sign in with the campaign owner Google account'), { status: 401 });
-function owner() { if (!uid() || uid().email !== ownerEmail || !uid().emailVerified) throw denied(); }
+const denied = () => Object.assign(new Error('Sign in with an approved admin account'), { status: 401 });
+function admin() { if (!session) throw denied(); }
+function owner() { if (!session?.isSuperAdmin) throw Object.assign(new Error('Super admin access is required'), { status: 403 }); }
 function normalize(value) { if (value && typeof value.toDate === 'function') return value.toDate().toISOString(); if (Array.isArray(value)) return value.map(normalize); if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k,v]) => [k, normalize(v)])); return value; }
 function rows(snapshot) { return snapshot.docs.map(d => ({ id: d.id, ...normalize(d.data()) })); }
 let cache = null;
 async function all() {
-  owner();
+  admin();
   if (cache && Date.now() - cache.at < 1500) return cache.promise;
   const promise = Promise.all(['forms','links','submissions','events'].map(name => getDocs(collection(db, name)).then(rows))).then(([forms,links,submissions,events]) => ({ forms, links, submissions: submissions.sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt))), events }));
   cache = { at: Date.now(), promise };
   return promise;
 }
 function clearCache() { cache = null; }
-function auditRow(action, detail) { return { action, detail, createdAt:serverTimestamp() }; }
+function auditRow(action, detail) { return { action, detail, createdAt:serverTimestamp(),actorUid:session?.uid||'',actor:session?.username||'' }; }
+async function recordLogin(){if(!session)return;await addDoc(collection(db,'adminLogins'),{uid:session.uid,username:session.username,role:session.role,createdAt:serverTimestamp()});}
 function summary(data, form) {
   const links = data.links.filter(l => l.formId === form.id);
   const events = data.events.filter(e => e.formId === form.id);
@@ -58,9 +71,16 @@ export async function request(path, options = {}) {
   const parts = splitPath(path);
   const method = options.method || 'GET';
   const input = body(options);
-  if (parts[1] === 'auth' && parts[2] === 'login' && method === 'POST') { const provider = new GoogleAuthProvider(); provider.setCustomParameters({ prompt:'select_account' }); await signInWithPopup(auth, provider); owner(); return { email: uid().email }; }
+  if (parts[1] === 'auth' && parts[2] === 'login' && method === 'POST') {
+    if(input.mode==='password'){
+      const username=String(input.username||'').trim();
+      if(!/^[A-Za-z0-9._-]{3,40}$/.test(username)||String(input.password||'').length<10)throw new Error('Enter your username and password.');
+      await signInWithEmailAndPassword(auth,usernameToEmail(username),String(input.password));
+    }else{const provider = new GoogleAuthProvider(); provider.setCustomParameters({ prompt:'select_account' }); await signInWithPopup(auth, provider);}
+    await refreshSession();admin();await recordLogin();return {...session};
+  }
   if (parts[1] === 'auth' && parts[2] === 'logout' && method === 'POST') { await signOut(auth); return { ok:true }; }
-  if (parts[1] === 'me') { owner(); return { email:uid().email }; }
+  if (parts[1] === 'me') { admin(); return {...session}; }
   if (parts[1] === 'public' && parts[2] === 'forms' && parts.length === 4 && method === 'GET') { const snap = await getDoc(doc(db,'forms',parts[3])); if (!snap.exists() || snap.data().status !== 'published') throw new Error('Form unavailable'); return publicFields({ id:snap.id, ...normalize(snap.data()) }); }
   if (parts[1] === 'public' && parts[2] === 'links' && parts.length === 4 && method === 'GET') { const snap = await getDoc(doc(db,'links',parts[3])); if (!snap.exists()) throw new Error('Link unavailable'); return { id:snap.id, formId:snap.data().formId }; }
   if (parts[1] === 'public' && parts[2] === 'links' && parts[4] === 'events' && method === 'POST') { const link = await getDoc(doc(db,'links',parts[3])); if (!link.exists()) throw new Error('Link unavailable'); await addDoc(collection(db,'events'), { formId:link.data().formId, linkId:parts[3], type:input.type, createdAt:serverTimestamp() }); clearCache(); return { ok:true }; }
@@ -76,7 +96,19 @@ export async function request(path, options = {}) {
     await batch.commit();
     clearCache(); return { id:submission.id };
   }
-  owner();
+  admin();
+  if (parts[1] === 'admins' && parts.length === 2 && method === 'GET') { owner(); return { admins:rows(await getDocs(collection(db,'admins'))).sort((a,b)=>String(a.username).localeCompare(String(b.username))) }; }
+  if (parts[1] === 'admins' && parts.length === 2 && method === 'POST') {
+    owner();const username=String(input.username||'').trim();const password=String(input.password||'');
+    if(!/^[A-Za-z0-9._-]{3,40}$/.test(username))throw new Error('Username can use letters, numbers, dot, dash, or underscore.');
+    if(password.length<10)throw new Error('Use a password with at least 10 characters.');
+    const provisioningApp=initializeApp(firebaseConfig,`provisioning-${Date.now()}`);const provisioningAuth=getAuth(provisioningApp);
+    let created;try{created=await createUserWithEmailAndPassword(provisioningAuth,usernameToEmail(username),password);}finally{await signOut(provisioningAuth).catch(()=>{});}
+    const profile={username,active:true,createdAt:serverTimestamp(),createdBy:session.uid};const batch=writeBatch(db);batch.set(doc(db,'admins',created.user.uid),profile);batch.set(doc(collection(db,'audit')),auditRow('admin.created',{username,uid:created.user.uid}));await batch.commit();return {admin:{uid:created.user.uid,...profile}};
+  }
+  if (parts[1] === 'admins' && parts.length === 3 && method === 'PATCH') { owner();const ref=doc(db,'admins',parts[2]);await updateDoc(ref,{active:input.active===true,updatedAt:serverTimestamp(),updatedBy:session.uid});await addDoc(collection(db,'audit'),auditRow('admin.access.updated',{uid:parts[2],active:input.active===true}));return {ok:true}; }
+  if (parts[1] === 'admin-logins' && method === 'GET') { owner();return {logins:rows(await getDocs(collection(db,'adminLogins'))).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))).slice(0,250)}; }
+  if (parts[1] === 'account' && parts[2] === 'password' && method === 'POST') { const current=String(input.currentPassword||''),next=String(input.nextPassword||'');if(session?.isSuperAdmin)throw new Error('The Google super admin password is managed by Google.');if(next.length<10)throw new Error('Use a new password with at least 10 characters.');await reauthenticateWithCredential(uid(),EmailAuthProvider.credential(uid().email,current));await updatePassword(uid(),next);await addDoc(collection(db,'audit'),auditRow('admin.password.changed',{}));return {ok:true}; }
   if (parts[1] === 'forms' && parts.length === 2 && method === 'GET') { const data = await all(); return { forms:data.forms.map(f => summary(data,f)) }; }
   if (parts[1] === 'forms' && parts.length === 2 && method === 'POST') { const id = slug(input.name); const existing = await getDoc(doc(db,'forms',id)); if (existing.exists()) throw new Error('A form with this title already exists'); const form = { slug:id, name:input.name, description:input.description || '', status:input.status || 'draft', candidate:input.candidate || '', promoter:input.promoter || '', candidateImage:input.candidateImage || '', promoterImage:input.promoterImage || '', theme:input.theme || {}, experience:input.experience || {}, fields:input.fields, createdAt:serverTimestamp(), updatedAt:serverTimestamp() }; const batch = writeBatch(db); batch.set(doc(db,'forms',id),form); batch.set(doc(collection(db,'audit')),auditRow('form.created',{formId:id})); await batch.commit(); clearCache(); return { form:{ id, ...form } }; }
   if (parts[1] === 'forms' && parts.length === 3 && method === 'PATCH') { const ref = doc(db,'forms',parts[2]); const batch = writeBatch(db); batch.update(ref, { name:input.name, description:input.description, status:input.status, candidate:input.candidate, promoter:input.promoter, candidateImage:input.candidateImage || '', promoterImage:input.promoterImage || '', theme:input.theme || {}, experience:input.experience || {}, fields:input.fields, updatedAt:serverTimestamp() }); batch.set(doc(collection(db,'audit')),auditRow('form.updated',{formId:parts[2]})); await batch.commit(); clearCache(); return { form:{ ...input, id:parts[2], slug:parts[2] } }; }
@@ -92,13 +124,13 @@ export async function request(path, options = {}) {
   if (parts[1] === 'form18-config' && method === 'GET') { const snap=await getDoc(doc(db,'form18Config','default')); return { config:snap.exists()?normalize(snap.data()):{} }; }
   if (parts[1] === 'form18-config' && method === 'PATCH') { const config={ title:String(input.title||'').slice(0,140), subtitle:String(input.subtitle||'').slice(0,300), consent:String(input.consent||'').slice(0,600), privacyNote:String(input.privacyNote||'').slice(0,400), documents:input.documents||{}, updatedAt:serverTimestamp() }; await setDoc(doc(db,'form18Config','default'),config,{merge:true}); await setDoc(doc(collection(db,'audit')),auditRow('form18.config.updated',{})); return { config }; }
   if (parts[1] === 'analytics' && method === 'GET') return metrics(await all());
-  if (parts[1] === 'audit' && method === 'GET') return { audit:rows(await getDocs(collection(db,'audit'))) };
+  if (parts[1] === 'audit' && method === 'GET') { owner(); return { audit:rows(await getDocs(collection(db,'audit'))) }; }
   throw new Error('Unsupported operation');
 }
-export async function downloadDocument(path, filename='document') { owner(); const blob=await getBlob(ref(storage,path)); const url=URL.createObjectURL(blob); const anchor=document.createElement('a');anchor.href=url;anchor.download=filename;anchor.style.display='none';document.body.appendChild(anchor);anchor.click();setTimeout(()=>{anchor.remove();URL.revokeObjectURL(url);},5000); }
-export async function viewDocument(path) { owner(); const viewer=window.open('about:blank','_blank');try{const url=await getDownloadURL(ref(storage,path));if(viewer)viewer.location.replace(url);else window.location.assign(url);}catch(error){viewer?.close();throw error;} }
+export async function downloadDocument(path, filename='document') { admin(); const blob=await getBlob(ref(storage,path)); const url=URL.createObjectURL(blob); const anchor=document.createElement('a');anchor.href=url;anchor.download=filename;anchor.style.display='none';document.body.appendChild(anchor);anchor.click();setTimeout(()=>{anchor.remove();URL.revokeObjectURL(url);},5000); }
+export async function viewDocument(path) { admin(); const viewer=window.open('about:blank','_blank');try{const url=await getDownloadURL(ref(storage,path));if(viewer)viewer.location.replace(url);else window.location.assign(url);}catch(error){viewer?.close();throw error;} }
 export async function applicationExportData(applications) {
-  owner();
+  admin();
   const exported=await Promise.all(applications.map(async application=>({
     ...application,
     documents:await Promise.all((application.documents||[]).map(async item=>({ ...item, shareUrl:item.storagePath?await getDownloadURL(ref(storage,item.storagePath)):'' })))

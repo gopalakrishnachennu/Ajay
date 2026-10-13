@@ -118,6 +118,13 @@ test('released application is two pages and OCR flow stays on the beta route', (
   const firebaseSource = fs.readFileSync(path.join(process.cwd(),'dist','firebase-mode.js'),'utf8');
   assert.match(firebaseSource,/storageBucket:\s*'ajaychevula-d2a22\.firebasestorage\.app'/);
   assert.match(firebaseSource,/getStorage\(app,\s*'gs:\/\/ajaychevula-d2a22\.firebasestorage\.app'\)/);
+  assert.match(firebaseSource,/signInWithEmailAndPassword/);
+  assert.match(firebaseSource,/createUserWithEmailAndPassword/);
+  assert.match(firebaseSource,/adminLogins/);
+  assert.match(firebaseSource,/usernameToEmail/);
   assert.match(firebaseSource,/window\.open\('about:blank','_blank'\)/);
   assert.match(firebaseSource,/document\.body\.appendChild\(anchor\)/);
+  assert.match(appSource,/Admin access/);
+  assert.match(appSource,/Continue with Google/);
+  assert.match(appSource,/Create admin/);
 });
