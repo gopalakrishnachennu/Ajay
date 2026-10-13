@@ -22,7 +22,7 @@ The product has one on-demand callable OCR function. It has no background trigge
 3. An already-registered voter provides name, mobile number, and mandal.
 4. A voter who needs help enters a secure document-first application.
 5. Uploads are saved first. When the voter taps **Check extracted details**, the callable Cloud Vision workflow reads every uploaded identity or education document and reports visible progress until it finishes.
-6. The voter supplies only missing details, reviews every value and confirms declarations.
+6. Page 3 shows every Form 18 field in one final validation screen, with OCR values prefilled, source/confidence markers, and placeholders for information not present in documents.
 7. The system creates a preparation PDF and records `FORM_PREPARED`, never `SUBMITTED`.
 
 The website cannot read a SIM's primary number. The mobile field uses the phone keyboard and browser autocomplete so Android or iPhone may suggest a saved number.
@@ -39,7 +39,7 @@ Document upload is enabled only on the `new` registration-help path:
 - Let the owner view or delete the document; never expose a public download URL.
 - Keep manual review as the source of truth.
 
-OCR uses explicit callable requests started by **Check extracted details** after uploads finish. It does not use a Storage trigger or background processing pipeline. The page shows document-count progress, fields found and recoverable failures before moving to manual completion. OCR suggestions must be confirmed by the voter and cannot overwrite confirmed data. When voluntarily provided, the complete Aadhaar number is retained only inside the private application and generated Form 18. It is excluded from analytics, logs and ordinary admin summaries. Raw OCR text is not retained.
+OCR uses explicit callable requests started by **Check extracted details** after uploads finish. It does not use a Storage trigger or background processing pipeline. The page shows document-count progress, fields found and recoverable failures before opening the single final validation page. When documents disagree, the highest-confidence candidate is prefilled and the field is marked for closer review. OCR suggestions must be confirmed by the voter and cannot overwrite confirmed data. When voluntarily provided, the complete Aadhaar number is retained only inside the private application and generated Form 18. It is excluded from analytics, logs and ordinary admin summaries. Raw OCR text is not retained.
 
 ## Deliberately excluded from the MVP
 
