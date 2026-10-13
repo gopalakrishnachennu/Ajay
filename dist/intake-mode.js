@@ -1,14 +1,23 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
-import { getStorage, ref, uploadBytesResumable } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js';
-import { defaultConfig } from './form18-schema.js?v=20261013h';
+import { defaultConfig } from './form18-schema.js?v=20261013i';
 
-const firebase = initializeApp({
-  apiKey:'AIzaSyDqa90otd4FEnYIys2dCV-zwtesCNxhzqI', authDomain:'ajaychevula-d2a22.firebaseapp.com',
-  projectId:'ajaychevula-d2a22', storageBucket:'ajaychevula-d2a22.firebasestorage.app', appId:'1:396367674243:web:bceb0a4c279959c29b94b6'
-});
-const auth=getAuth(firebase), db=getFirestore(firebase), storage=getStorage(firebase);
+let auth,db,storage,firebaseReady;
+let signInAnonymously,doc,getDoc,setDoc,updateDoc,collection,serverTimestamp,ref,uploadBytesResumable;
+async function ensureFirebase(){
+  if(firebaseReady)return firebaseReady;
+  firebaseReady=(async()=>{
+    const [appApi,authApi,firestoreApi,storageApi]=await Promise.all([
+      import('https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js'),
+      import('https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js'),
+      import('https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js')
+    ]);
+    ({signInAnonymously}=authApi);({doc,getDoc,setDoc,updateDoc,collection,serverTimestamp}=firestoreApi);({ref,uploadBytesResumable}=storageApi);
+    const firebase=appApi.initializeApp({apiKey:'AIzaSyDqa90otd4FEnYIys2dCV-zwtesCNxhzqI',authDomain:'ajaychevula-d2a22.firebaseapp.com',projectId:'ajaychevula-d2a22',storageBucket:'ajaychevula-d2a22.firebasestorage.app',appId:'1:396367674243:web:bceb0a4c279959c29b94b6'});
+    auth=authApi.getAuth(firebase);db=firestoreApi.getFirestore(firebase);storage=storageApi.getStorage(firebase);
+  })();
+  return firebaseReady;
+}
+async function ensureSession(){await ensureFirebase();if(!auth.currentUser)await signInAnonymously(auth);return auth.currentUser;}
 const root=document.getElementById('app');
 const appKey='campaignos.intake.application';
 const linkId=new URLSearchParams(location.search).get('link') || 'link_main';
@@ -47,7 +56,7 @@ async function saveDetails(event){
   if(!/^[6-9]\d{9}$/.test(state.values.mobile))return setError('Enter a valid 10-digit Indian mobile number.');
   try{
     state.busy=true;event.submitter.disabled=true;event.submitter.textContent='Saving securely…';
-    if(!auth.currentUser)await signInAnonymously(auth);
+    await ensureSession();
     const confirmedFields=Object.fromEntries(Object.entries({...state.values,relationType:'Father'}).filter(([key])=>key!=='consent').map(([key,value])=>[key,{value,confirmed:true,confirmedAt:new Date().toISOString()}]));
     if(!state.applicationId){
       const appRef=doc(collection(db,'applications'));state.applicationId=appRef.id;
@@ -109,11 +118,11 @@ async function submitApplication(){
 }
 function completeScreen(){root.innerHTML=shell(`<section class="smart-card smart-success"><div class="success-icon">✓</div><div class="smart-kicker">APPLICATION RECEIVED</div><h1>Thank you. Your details and documents were received.</h1><p>The authorised campaign team can now review your application.</p><div class="reference-box"><span>Application reference</span><strong>${html(state.applicationId)}</strong></div></section>`,2);}
 async function restore(){
-  if(!auth.currentUser)await signInAnonymously(auth);const id=localStorage.getItem(appKey);if(!id)return detailsScreen();
-  const snap=await getDoc(doc(db,'applications',id));if(!snap.exists()||snap.data().ownerUid!==auth.currentUser.uid){localStorage.removeItem(appKey);return detailsScreen();}
+  await ensureSession();const id=localStorage.getItem(appKey);if(!id)return;
+  const snap=await getDoc(doc(db,'applications',id));if(!snap.exists()||snap.data().ownerUid!==auth.currentUser.uid){localStorage.removeItem(appKey);return;}
   state.applicationId=id;const data=snap.data();state.values.mobile=data.mobile;for(const[key,record]of Object.entries(data.confirmedFields||{}))state.values[key]=record.value;state.values.consent=true;
   const docs=await Promise.all(Object.keys(state.config.documents).map(async type=>{const result=await getDoc(doc(db,'applications',id,'documents',type));return[type,result.exists()?{...result.data(),progress:100}:null];}));state.documents=Object.fromEntries(docs.filter(([,value])=>value));
   if(data.status==='DOCUMENTS_RECEIVED')completeScreen();else documentsScreen();
 }
-async function loadConfig(){try{const snap=await getDoc(doc(db,'form18Config','default'));if(snap.exists()){const saved=snap.data();state.config={...defaultConfig,...saved,documents:Object.fromEntries(Object.entries(defaultConfig.documents).map(([key,value])=>[key,{...value,...(saved.documents?.[key]||{})}]))};}}catch{}}
-export async function startIntake(){root.innerHTML='<div class="load-error">Opening secure application…</div>';await loadConfig();await new Promise(resolve=>{const off=onAuthStateChanged(auth,()=>{off();resolve();},()=>{off();resolve();});});await restore();}
+async function loadConfig(){try{await ensureFirebase();const snap=await getDoc(doc(db,'form18Config','default'));if(snap.exists()){const saved=snap.data();state.config={...defaultConfig,...saved,documents:Object.fromEntries(Object.entries(defaultConfig.documents).map(([key,value])=>[key,{...value,...(saved.documents?.[key]||{})}]))};}}catch{}}
+export async function startIntake(){detailsScreen();Promise.all([loadConfig(),restore()]).catch(error=>console.warn('Background application setup failed',error));}

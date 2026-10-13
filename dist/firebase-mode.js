@@ -1,7 +1,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, writeBatch, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
-import { getStorage, ref, getBlob } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js';
+import { getStorage, ref, getBlob, getDownloadURL } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js';
 
 const app = initializeApp({
   apiKey: 'AIzaSyDqa90otd4FEnYIys2dCV-zwtesCNxhzqI',
@@ -95,3 +95,12 @@ export async function request(path, options = {}) {
   throw new Error('Unsupported operation');
 }
 export async function downloadDocument(path, filename='document') { owner(); const blob=await getBlob(ref(storage,path)); const url=URL.createObjectURL(blob); const anchor=document.createElement('a');anchor.href=url;anchor.download=filename;anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000); }
+export async function viewDocument(path) { owner(); const url=await getDownloadURL(ref(storage,path)); const anchor=document.createElement('a');anchor.href=url;anchor.target='_blank';anchor.rel='noopener noreferrer';anchor.click(); }
+export async function applicationExportData(applications) {
+  owner();
+  const exported=await Promise.all(applications.map(async application=>({
+    ...application,
+    documents:await Promise.all((application.documents||[]).map(async item=>({ ...item, shareUrl:item.storagePath?await getDownloadURL(ref(storage,item.storagePath)):'' })))
+  })));
+  await addDoc(collection(db,'audit'),auditRow('applications.exported',{count:exported.length}));clearCache();return exported;
+}

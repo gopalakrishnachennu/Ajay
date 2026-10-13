@@ -103,4 +103,9 @@ test('released application is two pages and OCR flow stays on the beta route', (
   for (const field of ['Full name','Father\'s name','Gender','Date of birth','MLC constituency','Assembly constituency','District','Email ID']) assert.match(intakeSource,new RegExp(field));
   assert.match(intakeSource,/DOCUMENTS_RECEIVED/);
   assert.doesNotMatch(intakeSource,/ocrDocument|Cloud Vision/);
+  assert.match(intakeSource,/startIntake\(\)\{detailsScreen\(\);Promise\.all/);
+  assert.doesNotMatch(intakeSource,/^import .*firebasejs/m);
+  assert.match(appSource,/export-applications-csv/);
+  assert.match(appSource,/export-applications-pdf/);
+  assert.match(appSource,/Copy document links/);
 });
