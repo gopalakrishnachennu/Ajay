@@ -5,10 +5,10 @@ CampaignOS handles form creation, link distribution, response collection, secure
 ## Live Firebase project
 
 - Hosting: https://ajaychevula-d2a22.web.app
-- Admin SaaS: https://ajaychevula-d2a22.web.app/?admin=1&v=20261013k
-- Public voter form: https://ajaychevula-d2a22.web.app/?form=graduate-voter&link=link_main&v=20261013k
-- Current two-page application: https://ajaychevula-d2a22.web.app/?apply=form18&link=link_main&v=20261013k
-- Unreleased OCR beta: https://ajaychevula-d2a22.web.app/?apply=form18-beta&link=link_main&v=20261013k
+- Admin SaaS: https://ajaychevula-d2a22.web.app/?admin=1&v=20261013m
+- Public voter form: https://ajaychevula-d2a22.web.app/?form=graduate-voter&link=link_main&v=20261013m
+- Current two-page application: https://ajaychevula-d2a22.web.app/?apply=form18&link=link_main&v=20261013m
+- Unreleased OCR beta: https://ajaychevula-d2a22.web.app/?apply=form18-beta&link=link_main&v=20261013m
 - Firebase project: `ajaychevula-d2a22`
 - Firestore database: `(default)`, `asia-south1` (Mumbai), free tier, deletion protection enabled
 - Owner login: Google account `gopalakrishnachennu@gmail.com`

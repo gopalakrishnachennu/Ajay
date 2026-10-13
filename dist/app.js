@@ -7,7 +7,7 @@ const nav = ['Overview', 'Forms', 'Form builder', 'Applications', 'Form 18 setup
 const $ = id => document.getElementById(id);
 const html = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const date = value => value ? new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
-const publicUrl = (form, link) => `${location.origin}/?form=${encodeURIComponent(form.slug)}&link=${encodeURIComponent(link.id)}&v=20261013k`;
+const publicUrl = (form, link) => `${location.origin}/?form=${encodeURIComponent(form.slug)}&link=${encodeURIComponent(link.id)}&v=20261013m`;
 const defaultExperience = {
   brandTitle: 'Graduate voter help', brandSubtitle: 'Telangana MLC election', kicker: 'TELANGANA · MLC',
   headlineMain: 'We’ll help you', headlineAccent: 'get started.',
@@ -57,19 +57,16 @@ function applicationsPage() {
 }
 
 function downloadFile(content,type,name){const blob=content instanceof Blob?content:new Blob([content],{type});const url=URL.createObjectURL(blob);const anchor=document.createElement('a');anchor.href=url;anchor.download=name;anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
-function csvCell(value){return `"${String(value??'').replaceAll('"','""')}"`;}
+function csvCell(value){const formula=value&&typeof value==='object'&&value.formula;let text=formula||String(value??'');if(!formula&&/^[=+\-@]/.test(text))text=`'${text}`;return `"${text.replaceAll('"','""')}"`;}
 async function enrichedApplications(selection=state.applications){if(!cloud)throw new Error('Exports are available on Firebase Hosting');return cloud.applicationExportData(selection);}
 function exportCsv(applications){
   const headers=['Reference','Status','Received at',...applicationFields.map(([,label])=>label),...documentTypes.map(([,label])=>`${label} link`)];
-  const rows=applications.map(application=>[application.id,application.status,application.submittedAt||application.createdAt||'',...applicationFields.map(([key])=>confirmedValue(application,key)),...documentTypes.map(([type])=>application.documents?.find(item=>item.id===type)?.shareUrl||'')]);
+  const rows=applications.map(application=>[application.id,application.status,application.submittedAt||application.createdAt||'',...applicationFields.map(([key])=>confirmedValue(application,key)),...documentTypes.map(([type,label])=>{const url=application.documents?.find(item=>item.id===type)?.shareUrl;if(!url)return '';return{formula:`=HYPERLINK("${url.replaceAll('"','""')}","View ${label.replaceAll('"','""')}")`};})]);
   downloadFile('\ufeff'+[headers,...rows].map(row=>row.map(csvCell).join(',')).join('\r\n'),'text/csv;charset=utf-8','graduate-voter-applications.csv');
 }
 async function exportPdf(applications){
-  const PDFLib=await import('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/+esm');const {PDFDocument,StandardFonts,rgb}=PDFLib;const pdf=await PDFDocument.create();const regular=await pdf.embedFont(StandardFonts.Helvetica);const bold=await pdf.embedFont(StandardFonts.HelveticaBold);let page,y;
-  const cleanPdf=value=>String(value??'').replace(/[^\x20-\x7E]/g,'?');const newPage=()=>{page=pdf.addPage([595.28,841.89]);y=795;page.drawText('GRADUATE VOTER APPLICATIONS',{x:38,y,font:bold,size:16,color:rgb(.06,.30,.20)});page.drawText(`Private admin export - ${new Date().toLocaleString('en-IN')}`,{x:38,y:y-19,font:regular,size:8,color:rgb(.38,.44,.40)});y-=46;};
-  const line=(label,value,size=8)=>{const text=`${label}: ${cleanPdf(value)||'-'}`;const chunks=text.match(/.{1,92}(?:\s|$)|.{1,92}/g)||['-'];if(y-chunks.length*11<38)newPage();chunks.forEach(chunk=>{page.drawText(chunk.trim(),{x:42,y,font:label?regular:bold,size,color:rgb(.13,.20,.16),maxWidth:510});y-=11;});};
-  newPage();for(const application of applications){if(y<210)newPage();page.drawText(cleanPdf(confirmedValue(application,'fullName')||'Unnamed voter'),{x:38,y,font:bold,size:12,color:rgb(.06,.30,.20)});y-=17;line('Reference',application.id);line('Status',application.status);for(const [key,label] of applicationFields)line(label,confirmedValue(application,key));line('Documents',application.documents?.length||0);for(const item of application.documents||[])line(item.id.replaceAll('_',' '),item.shareUrl,6.7);y-=16;page.drawLine({start:{x:38,y:y+8},end:{x:557,y:y+8},thickness:.6,color:rgb(.84,.86,.84)});}
-  pdf.setTitle('Graduate Voter Applications');pdf.setSubject('Private campaign administration export with document access links');downloadFile(await pdf.save(),'application/pdf','graduate-voter-applications.pdf');
+  const [PDFLib,template]=await Promise.all([import('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/+esm'),import('./admin-export-pdf.js?v=20261013m')]);
+  downloadFile(await template.buildApplicationsPdf(PDFLib,applications,applicationFields,documentTypes,confirmedValue),'application/pdf','graduate-voter-applications.pdf');
 }
 function form18SetupPage() {
   const c=state.form18Config||{}; const docs=c.documents||{}; const docRows=[['aadhaar_front','Aadhaar front'],['aadhaar_back','Aadhaar back'],['voter_id','Voter ID / EPIC'],['degree','Degree certificate'],['photo','Passport photo']].map(([key,label])=>`<div class="workflow-doc"><label>${label} label<input data-doc-label="${key}" value="${html(docs[key]?.label || label)}"></label><label>Help text<input data-doc-hint="${key}" value="${html(docs[key]?.hint || '')}"></label><label class="check-label"><input type="checkbox" data-doc-required="${key}" ${docs[key]?.required?'checked':''}> Required</label></div>`).join('');
@@ -273,7 +270,7 @@ async function advance(value) {
   if (field.type === 'year' && answer && !/^(19|20)\d{2}$/.test(answer)) { $('publicError').textContent = 'Please enter a 4-digit year.'; return; }
   state.answer[field.key] = answer;
   if (field.key === 'status' && answer === 'new') {
-      location.href = `/?apply=form18&link=${encodeURIComponent(state.publicLink.id)}&v=20261013k`;
+      location.href = `/?apply=form18&link=${encodeURIComponent(state.publicLink.id)}&v=20261013m`;
     return;
   }
   if (!state.started) {
@@ -316,16 +313,16 @@ async function loadPublic() {
 async function boot() {
   const params = new URLSearchParams(location.search);
   if (params.get('apply') === 'form18') {
-    try { const flow = await import('./intake-mode.js?v=20261013k'); await flow.startIntake(); }
+    try { const flow = await import('./intake-mode.js?v=20261013m'); await flow.startIntake(); }
     catch (err) { root.innerHTML = `<div class="load-error"><h2>Secure application could not open</h2><p>${html(err.message)}</p></div>`; }
     return;
   }
   if (params.get('apply') === 'form18-beta') {
-    try { const flow = await import('./form18-mode.js?v=20261013k'); await flow.startForm18(); }
+    try { const flow = await import('./form18-mode.js?v=20261013m'); await flow.startForm18(); }
     catch (err) { root.innerHTML = `<div class="load-error"><h2>Beta application could not open</h2><p>${html(err.message)}</p></div>`; }
     return;
   }
-  if (cloudMode) { try { cloud = await import('./firebase-mode.js?v=20261013k'); await cloud.ready; } catch (err) { root.innerHTML = `<div class="load-error"><h2>Firebase connection failed</h2><p>${html(err.message)}</p></div>`; return; } }
+  if (cloudMode) { try { cloud = await import('./firebase-mode.js?v=20261013m'); await cloud.ready; } catch (err) { root.innerHTML = `<div class="load-error"><h2>Firebase connection failed</h2><p>${html(err.message)}</p></div>`; return; } }
   if (params.has('form')) loadPublic(); else loadAdmin();
 }
 boot();
