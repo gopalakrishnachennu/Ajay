@@ -1,0 +1,104 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function owner() {
+      return request.auth != null
+        && request.auth.token.email == 'gopalakrishnachennu@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+    function published(formId) {
+      return get(/databases/$(database)/documents/forms/$(formId)).data.status == 'published';
+    }
+    function validLink(formId, linkId) {
+      return exists(/databases/$(database)/documents/links/$(linkId))
+        && get(/databases/$(database)/documents/links/$(linkId)).data.formId == formId
+        && published(formId);
+    }
+    function applicationOwner() {
+      return request.auth != null && resource.data.ownerUid == request.auth.uid;
+    }
+    match /forms/{formId} {
+      allow get: if owner() || resource.data.status == 'published';
+      allow list: if owner();
+      allow create, update: if owner();
+      allow delete: if false;
+    }
+    match /links/{linkId} {
+      allow get: if owner() || published(resource.data.formId);
+      allow list: if owner();
+      allow create, update: if owner();
+      allow delete: if false;
+    }
+    match /submissions/{submissionId} {
+      allow get, list, update: if owner();
+      allow create: if request.resource.data.keys().hasOnly(['formId','linkId','answers','followUp','note','createdAt','updatedAt'])
+        && request.resource.data.formId is string
+        && request.resource.data.linkId is string
+        && validLink(request.resource.data.formId, request.resource.data.linkId)
+        && request.resource.data.answers is map
+        && request.resource.data.answers.keys().size() <= 30
+        && request.resource.data.followUp == 'pending'
+        && request.resource.data.note == ''
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+    match /applications/{applicationId} {
+      allow get: if owner() || applicationOwner();
+      allow list: if owner();
+      allow create: if request.auth != null
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'ownerUid','formId','linkId','schemaVersion','status','mobile','consentVersion',
+          'consentAccepted','extractedFields','confirmedFields','missingFields','declarations',
+          'mappingStatus','createdAt','updatedAt'
+        ])
+        && request.resource.data.schemaVersion in [1, 2]
+        && request.resource.data.mobile is string
+        && request.resource.data.mobile.matches('^[6-9][0-9]{9}$')
+        && request.resource.data.status == 'DRAFT'
+        && request.resource.data.consentAccepted == true
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if request.auth != null
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+
+      match /documents/{documentId} {
+        function parentOwned() {
+          return request.auth != null
+            && get(/databases/$(database)/documents/applications/$(applicationId)).data.ownerUid == request.auth.uid;
+        }
+        allow get, list: if owner() || parentOwned();
+        allow create, update: if parentOwned();
+        allow delete: if false;
+      }
+    }
+    match /form18Config/{configId} {
+      allow get: if true;
+      allow list: if owner();
+      allow create, update: if owner();
+      allow delete: if false;
+    }
+    match /events/{eventId} {
+      allow get, list: if owner();
+      allow create: if request.resource.data.keys().hasOnly(['formId','linkId','type','createdAt'])
+        && request.resource.data.formId is string
+        && request.resource.data.linkId is string
+        && request.resource.data.type in ['view','start','share','submit']
+        && validLink(request.resource.data.formId, request.resource.data.linkId)
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+    match /audit/{auditId} {
+      allow get, list, create: if owner();
+      allow update, delete: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

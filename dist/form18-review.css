@@ -1,0 +1,89 @@
+.final-review { max-width: 980px; }
+
+.extraction-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.extraction-summary span {
+  padding: 16px 18px;
+  border: 1px solid #dce8dc;
+  border-radius: 16px;
+  background: #f3f8f1;
+  color: #607568;
+  font-size: 12px;
+}
+
+.extraction-summary b { display: block; color: #104c34; font: 800 24px Manrope, sans-serif; }
+
+.raw-ocr {
+  margin-bottom: 22px;
+  padding: 14px 17px;
+  border: 1px solid #e2e6dc;
+  border-radius: 14px;
+  background: #faf9f4;
+}
+
+.raw-ocr summary,
+.review-section > summary {
+  cursor: pointer;
+  color: #315c47;
+  font-weight: 800;
+}
+
+.raw-ocr p { margin-bottom: 0; font-size: 12px; }
+
+.review-section {
+  border: 0;
+  border-top: 1px solid #e3e7df;
+  padding: 22px 0 8px;
+  margin: 0;
+}
+
+.review-section > summary {
+  margin-bottom: 18px;
+  color: #b76232;
+  font: 800 12px 'DM Mono', monospace;
+  letter-spacing: .08em;
+  list-style-position: outside;
+  text-transform: uppercase;
+}
+
+.field-origin {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin: 5px 0 0 7px;
+  padding: 3px 7px;
+  border-radius: 99px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  vertical-align: middle;
+}
+
+.fetched-origin { background: #e4f3e7; color: #277049; }
+.check-origin { background: #fff0da; color: #9a5a1d; }
+.missing-origin { background: #f1f1ed; color: #7b837d; }
+.ocr-filled input,
+.ocr-filled select { background: #fbfef9; border-color: #a8cfb1; }
+.ocr-missing input:required,
+.ocr-missing select:required { border-color: #e5bb8f; background: #fffdfa; }
+
+.declaration-panel {
+  margin-top: 28px;
+  padding: 20px;
+  border-radius: 18px;
+  background: #f4f8f2;
+}
+
+.declaration-panel h2 { margin: 0 0 6px; color: #19372c; font: 800 20px Manrope, sans-serif; }
+.declaration-panel .smart-consent { margin: 14px 0; }
+
+@media (max-width: 680px) {
+  .extraction-summary { grid-template-columns: 1fr 1fr; }
+  .field-origin { display: flex; margin-left: 0; }
+  .review-section > summary { padding-left: 4px; }
+}

@@ -1,0 +1,22 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function owner() {
+      return request.auth != null
+        && request.auth.token.email == 'gopalakrishnachennu@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+    function safeUpload() {
+      return request.resource.size < 15 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)|application/pdf');
+    }
+    match /applications/{uid}/{applicationId}/{allPaths=**} {
+      allow read: if owner() || (request.auth != null && request.auth.uid == uid);
+      allow create, update: if request.auth != null && request.auth.uid == uid && safeUpload();
+      allow delete: if owner() || (request.auth != null && request.auth.uid == uid);
+    }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

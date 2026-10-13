@@ -1,0 +1,12 @@
+node_modules/
+.firebase/
+firebase-debug.log
+data/db.json
+.env
+*.log
+functions/node_modules/
+output/
+tmp/
+*-preview.png
+*-live.png
+.DS_Store

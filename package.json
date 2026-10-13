@@ -1,0 +1,23 @@
+{
+  "name": "campaignos-telangana",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CampaignOS: form operations for people-powered campaigns",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test:e2e": "node --test tests/e2e.test.mjs",
+    "test:rules": "firebase emulators:exec --only firestore 'node --test tests/firestore.rules.test.mjs'",
+    "seed:firebase": "node scripts/seed-firebase.mjs",
+    "sync:template": "node scripts/sync-template.mjs",
+    "deploy:firebase": "firebase deploy --only firestore:rules,auth,hosting --project ajaychevula-d2a22"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0",
+    "firebase": "^13.0.0",
+    "pdf-lib": "^1.17.1"
+  }
+}

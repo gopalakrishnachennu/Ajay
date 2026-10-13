@@ -1,0 +1,51 @@
+{
+  "forms": [
+    {
+      "id": "graduate-voter",
+      "slug": "graduate-voter",
+      "name": "Graduate Voter Registration",
+      "description": "Check voter status or request help joining the graduate voter list.",
+      "status": "published",
+      "candidate": "Shri Sama Ram Mohan Reddy",
+      "promoter": "Chevula Ajay Reddy",
+      "theme": {
+        "primary": "#104c34",
+        "accent": "#d86c3b",
+        "background": "#f7f4ec"
+      },
+      "experience": {
+        "brandTitle": "Graduate voter help",
+        "brandSubtitle": "Telangana MLC election",
+        "kicker": "TELANGANA · MLC",
+        "headlineMain": "We’ll help you",
+        "headlineAccent": "get started.",
+        "candidateLabel": "CONGRESS MLC CANDIDATE",
+        "promoterLabel": "CAMPAIGN PROMOTER",
+        "privacyLabel": "PRIVATE",
+        "helperText": "A few easy steps. You can check everything before sending.",
+        "reviewTitle": "Does everything look right?",
+        "reviewNotice": "Our team will review your details. Election officials decide voter-list registration.",
+        "submitButton": "Send my details",
+        "successTitle": "Thank you. We got your details.",
+        "successText": "Our team will contact you if anything else is needed.",
+        "shareButton": "Share this form"
+      },
+      "fields": [
+        {"key":"status","type":"choice","label":"Is your name on the graduate voter list?","help":"Choose the answer that fits you.","required":true,"options":["registered","new"],"optionLabels":{"registered":"Yes, my name is on the list","new":"No, I need help"},"when":null,"autocomplete":null},
+        {"key":"name","type":"text","label":"What is your full name?","placeholder":"Your full name","required":true,"options":[],"when":null,"autocomplete":"name"},
+        {"key":"phone","type":"phone","label":"What is your mobile number?","help":"We may call you about this request.","placeholder":"10-digit mobile number","required":true,"options":[],"when":null,"autocomplete":"tel-national"},
+        {"key":"mandal","type":"text","label":"Which mandal do you live in?","placeholder":"Type your mandal","required":true,"options":[],"when":null,"autocomplete":null},
+        {"key":"qualification","type":"text","label":"What degree did you complete?","placeholder":"For example, B.A. or B.Tech","required":true,"options":[],"when":"new","autocomplete":null},
+        {"key":"graduation","type":"year","label":"What year did you graduate?","placeholder":"For example, 2020","required":true,"options":[],"when":"new","autocomplete":null}
+      ],
+      "createdAt": "2026-10-12T00:00:00.000Z",
+      "updatedAt": "2026-10-12T00:00:00.000Z"
+    }
+  ],
+  "links": [
+    {"id":"link_main","formId":"graduate-voter","name":"Main campaign link","views":0,"starts":0,"shares":0,"createdAt":"2026-10-12T00:00:00.000Z"}
+  ],
+  "submissions": [],
+  "events": [],
+  "audit": []
+}
