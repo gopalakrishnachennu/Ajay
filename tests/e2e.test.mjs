@@ -108,4 +108,9 @@ test('released application is two pages and OCR flow stays on the beta route', (
   assert.match(appSource,/export-applications-csv/);
   assert.match(appSource,/export-applications-pdf/);
   assert.match(appSource,/Copy document links/);
+  const firebaseSource = fs.readFileSync(path.join(process.cwd(),'dist','firebase-mode.js'),'utf8');
+  assert.match(firebaseSource,/storageBucket:\s*'ajaychevula-d2a22\.firebasestorage\.app'/);
+  assert.match(firebaseSource,/getStorage\(app,\s*'gs:\/\/ajaychevula-d2a22\.firebasestorage\.app'\)/);
+  assert.match(firebaseSource,/window\.open\('about:blank','_blank'\)/);
+  assert.match(firebaseSource,/document\.body\.appendChild\(anchor\)/);
 });

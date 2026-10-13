@@ -7,11 +7,12 @@ const app = initializeApp({
   apiKey: 'AIzaSyDqa90otd4FEnYIys2dCV-zwtesCNxhzqI',
   authDomain: 'ajaychevula-d2a22.firebaseapp.com',
   projectId: 'ajaychevula-d2a22',
+  storageBucket: 'ajaychevula-d2a22.firebasestorage.app',
   appId: '1:396367674243:web:bceb0a4c279959c29b94b6'
 });
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
+const storage = getStorage(app, 'gs://ajaychevula-d2a22.firebasestorage.app');
 const ownerEmail = 'gopalakrishnachennu@gmail.com';
 export const ready = new Promise(resolve => onAuthStateChanged(auth, () => resolve(), () => resolve()));
 const uid = () => auth.currentUser;
@@ -94,8 +95,8 @@ export async function request(path, options = {}) {
   if (parts[1] === 'audit' && method === 'GET') return { audit:rows(await getDocs(collection(db,'audit'))) };
   throw new Error('Unsupported operation');
 }
-export async function downloadDocument(path, filename='document') { owner(); const blob=await getBlob(ref(storage,path)); const url=URL.createObjectURL(blob); const anchor=document.createElement('a');anchor.href=url;anchor.download=filename;anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000); }
-export async function viewDocument(path) { owner(); const url=await getDownloadURL(ref(storage,path)); const anchor=document.createElement('a');anchor.href=url;anchor.target='_blank';anchor.rel='noopener noreferrer';anchor.click(); }
+export async function downloadDocument(path, filename='document') { owner(); const blob=await getBlob(ref(storage,path)); const url=URL.createObjectURL(blob); const anchor=document.createElement('a');anchor.href=url;anchor.download=filename;anchor.style.display='none';document.body.appendChild(anchor);anchor.click();setTimeout(()=>{anchor.remove();URL.revokeObjectURL(url);},5000); }
+export async function viewDocument(path) { owner(); const viewer=window.open('about:blank','_blank');try{const url=await getDownloadURL(ref(storage,path));if(viewer)viewer.location.replace(url);else window.location.assign(url);}catch(error){viewer?.close();throw error;} }
 export async function applicationExportData(applications) {
   owner();
   const exported=await Promise.all(applications.map(async application=>({
