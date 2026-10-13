@@ -2,7 +2,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/fireba
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { getStorage, ref, uploadBytesResumable } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js';
-import { defaultConfig } from './form18-schema.js?v=20261013g';
+import { defaultConfig } from './form18-schema.js?v=20261013h';
 
 const firebase = initializeApp({
   apiKey:'AIzaSyDqa90otd4FEnYIys2dCV-zwtesCNxhzqI', authDomain:'ajaychevula-d2a22.firebaseapp.com',
@@ -21,7 +21,10 @@ function shell(content,step=1){
 function setError(message=''){const target=document.getElementById('smartError');if(target)target.textContent=message;}
 function detailsScreen(){
   const v=state.values;
-  root.innerHTML=shell(`<section class="smart-card smart-wide intake-card"><div class="smart-kicker">STEP 1 OF 2</div><h1>Tell us about the graduate voter</h1><p>Enter these basic details once. On the next page, upload the supporting documents.</p><form id="detailsForm"><div class="smart-fields intake-fields">
+  root.innerHTML=shell(`<section class="smart-card smart-wide intake-card"><div class="intake-leadership" aria-label="Campaign leadership">
+    <div class="intake-candidate"><img src="assets/sama-ram-mohan-reddy.jpg" alt="Sama Ram Mohan Reddy"><div><span>MLC CANDIDATE</span><strong>Sama Ram Mohan Reddy</strong><small>Mahabubnagar · Hyderabad · Ranga Reddy</small></div></div>
+    <div class="intake-promoter"><img src="assets/chevula-ajay-reddy.png" alt="Chevula Ajay Reddy"><div><span>CAMPAIGN PROMOTER</span><strong>Chevula Ajay Reddy</strong></div></div>
+  </div><div class="smart-kicker">STEP 1 OF 2</div><h1>Tell us about the graduate voter</h1><p>Enter these basic details once. On the next page, upload the supporting documents.</p><form id="detailsForm"><div class="smart-fields intake-fields">
     <label><span>Full name *</span><input id="fullName" autocomplete="name" value="${html(v.fullName)}" placeholder="As shown on your documents" required></label>
     <label><span>Father's name *</span><input id="relativeName" autocomplete="off" value="${html(v.relativeName)}" placeholder="Father's full name" required></label>
     <label><span>Gender *</span><select id="sex" required><option value="">Tap to choose</option>${['Male','Female','Third gender'].map(x=>`<option ${v.sex===x?'selected':''}>${x}</option>`).join('')}</select></label>

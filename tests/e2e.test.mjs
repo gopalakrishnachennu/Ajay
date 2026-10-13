@@ -96,6 +96,10 @@ test('released application is two pages and OCR flow stays on the beta route', (
   assert.match(appSource, /apply'\) === 'form18-beta'[\s\S]*form18-mode\.js/);
   assert.match(intakeSource, /STEP 1 OF 2/);
   assert.match(intakeSource, /STEP 2 OF 2 · FINAL/);
+  assert.match(intakeSource, /MLC CANDIDATE[\s\S]*Sama Ram Mohan Reddy/);
+  assert.match(intakeSource, /CAMPAIGN PROMOTER[\s\S]*Chevula Ajay Reddy/);
+  assert.match(intakeSource, /assets\/sama-ram-mohan-reddy\.jpg/);
+  assert.match(intakeSource, /assets\/chevula-ajay-reddy\.png/);
   for (const field of ['Full name','Father\'s name','Gender','Date of birth','MLC constituency','Assembly constituency','District','Email ID']) assert.match(intakeSource,new RegExp(field));
   assert.match(intakeSource,/DOCUMENTS_RECEIVED/);
   assert.doesNotMatch(intakeSource,/ocrDocument|Cloud Vision/);
