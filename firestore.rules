@@ -53,7 +53,7 @@ service cloud.firestore {
           'consentAccepted','extractedFields','confirmedFields','missingFields','declarations',
           'mappingStatus','createdAt','updatedAt'
         ])
-        && request.resource.data.schemaVersion in [1, 2]
+        && request.resource.data.schemaVersion in [1, 2, 3]
         && request.resource.data.mobile is string
         && request.resource.data.mobile.matches('^[6-9][0-9]{9}$')
         && request.resource.data.status == 'DRAFT'

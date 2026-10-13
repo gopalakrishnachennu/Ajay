@@ -5,7 +5,9 @@ CampaignOS handles form creation, link distribution, response collection, secure
 ## Live Firebase project
 
 - Hosting: https://ajaychevula-d2a22.web.app
-- Public voter form: https://ajaychevula-d2a22.web.app/?form=graduate-voter&link=link_main&v=20261013f
+- Public voter form: https://ajaychevula-d2a22.web.app/?form=graduate-voter&link=link_main&v=20261013g
+- Current two-page application: https://ajaychevula-d2a22.web.app/?apply=form18&link=link_main&v=20261013g
+- Unreleased OCR beta: https://ajaychevula-d2a22.web.app/?apply=form18-beta&link=link_main&v=20261013g
 - Firebase project: `ajaychevula-d2a22`
 - Firestore database: `(default)`, `asia-south1` (Mumbai), free tier, deletion protection enabled
 - Owner login: Google account `gopalakrishnachennu@gmail.com`
@@ -46,7 +48,7 @@ The initial form and link are seeded with `node scripts/seed-firebase.mjs`. The 
 5. Registration-help voters receive an invisible anonymous session, private application record, direct Storage uploads, on-demand Cloud Vision OCR with visible progress after “Check extracted details”, and a generated preparation PDF.
 6. Owner actions write to `audit`. The owner workspace reads these records for the funnel, activity trail, secure applications and follow-ups.
 
-Already-registered people are asked for status, full name, mobile number, and mandal. People requesting registration help enter a secure three-step flow: mobile consent, document upload, then one final validation page. Every document input accepts an image or PDF (up to 15 MB); compatible phone images are normalized to JPEG when needed. Cloud Vision fills every Form 18 field it can identify, displays the source and confidence beside each value, and leaves only genuinely unavailable fields for voter correction. There is no separate fourth review page. The admin can edit the ordinary form and the smart-workflow heading, consent, privacy copy, document labels and required flags. Mandal and constituency mappings are intentionally empty until verified reference data is supplied. CSV and Google Sheets features are intentionally excluded.
+Already-registered people are asked for status, full name, mobile number, and mandal. The currently released registration-help path has two pages. Page 1 collects full name, father's name, gender, DOB, MLC constituency, Assembly constituency, district, email and mobile. Page 2 collects the configured documents and submits them for authorised admin review. Every document input accepts an image or PDF (up to 15 MB); compatible phone images are normalized to JPEG when needed. Voter-side OCR is disabled in this released flow. The complete three-step Cloud Vision/Form 18 experience is preserved at the unreleased beta route for later review. CSV and Google Sheets features are intentionally excluded.
 
 Browser forms cannot read the phone's SIM number. The phone field uses `type="tel"`, a telephone keyboard, and `autocomplete="tel-national"` so Android and iPhone browsers can offer a saved number when available. Visitors can review or edit it.
 

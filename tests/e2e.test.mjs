@@ -88,3 +88,15 @@ test('form generation, public intake, link tracking and follow-up work together'
   });
   assert.equal(formulaAttempt.status, 201);
 });
+
+test('released application is two pages and OCR flow stays on the beta route', () => {
+  const appSource = fs.readFileSync(path.join(process.cwd(),'dist','app.js'),'utf8');
+  const intakeSource = fs.readFileSync(path.join(process.cwd(),'dist','intake-mode.js'),'utf8');
+  assert.match(appSource, /apply'\) === 'form18'[\s\S]*intake-mode\.js/);
+  assert.match(appSource, /apply'\) === 'form18-beta'[\s\S]*form18-mode\.js/);
+  assert.match(intakeSource, /STEP 1 OF 2/);
+  assert.match(intakeSource, /STEP 2 OF 2 · FINAL/);
+  for (const field of ['Full name','Father\'s name','Gender','Date of birth','MLC constituency','Assembly constituency','District','Email ID']) assert.match(intakeSource,new RegExp(field));
+  assert.match(intakeSource,/DOCUMENTS_RECEIVED/);
+  assert.doesNotMatch(intakeSource,/ocrDocument|Cloud Vision/);
+});

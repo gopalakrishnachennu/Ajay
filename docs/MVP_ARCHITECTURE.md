@@ -20,10 +20,10 @@ The product has one on-demand callable OCR function. It has no background trigge
 1. A voter opens a distribution link.
 2. The form records an open and then shows one large, touch-friendly question at a time.
 3. An already-registered voter provides name, mobile number, and mandal.
-4. A voter who needs help enters a secure document-first application.
-5. Uploads are saved first. When the voter taps **Check extracted details**, the callable Cloud Vision workflow reads every uploaded identity or education document and reports visible progress until it finishes.
-6. Page 3 shows every Form 18 field in one final validation screen, with OCR values prefilled, source/confidence markers, and placeholders for information not present in documents.
-7. The system creates a preparation PDF and records `FORM_PREPARED`, never `SUBMITTED`.
+4. A voter who needs help enters the current two-page application.
+5. Page 1 collects personal, constituency and contact details.
+6. Page 2 stores uploaded documents and records `DOCUMENTS_RECEIVED` for admin review.
+7. The Cloud Vision/Form 18 experience remains available only through the unreleased beta route.
 
 The website cannot read a SIM's primary number. The mobile field uses the phone keyboard and browser autocomplete so Android or iPhone may suggest a saved number.
 
