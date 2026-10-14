@@ -7,7 +7,7 @@ const nav = ['Overview', 'Forms', 'Form builder', 'Applications', 'Form 18 setup
 const $ = id => document.getElementById(id);
 const html = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const date = value => value ? new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
-const publicUrl = (form, link) => `${location.origin}/?form=${encodeURIComponent(form.slug)}&link=${encodeURIComponent(link.id)}&v=20261014b`;
+const publicUrl = (form, link) => `${location.origin}/?form=${encodeURIComponent(form.slug)}&link=${encodeURIComponent(link.id)}&v=20261014c`;
 const defaultExperience = {
   brandTitle: 'Graduate voter help', brandSubtitle: 'Telangana MLC election', kicker: 'TELANGANA · MLC',
   headlineMain: 'We’ll help you', headlineAccent: 'get started.',
@@ -65,7 +65,7 @@ function exportCsv(applications){
   downloadFile('\ufeff'+[headers,...rows].map(row=>row.map(csvCell).join(',')).join('\r\n'),'text/csv;charset=utf-8','graduate-voter-applications.csv');
 }
 async function exportPdf(applications){
-  const [PDFLib,template]=await Promise.all([import('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/+esm'),import('./admin-export-pdf.js?v=20261014b')]);
+  const [PDFLib,template]=await Promise.all([import('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/+esm'),import('./admin-export-pdf.js?v=20261014c')]);
   downloadFile(await template.buildApplicationsPdf(PDFLib,applications,applicationFields,documentTypes,confirmedValue),'application/pdf','graduate-voter-applications.pdf');
 }
 function form18SetupPage() {
@@ -277,7 +277,7 @@ async function advance(value) {
   if (field.type === 'year' && answer && !/^(19|20)\d{2}$/.test(answer)) { $('publicError').textContent = 'Please enter a 4-digit year.'; return; }
   state.answer[field.key] = answer;
   if (field.key === 'status' && answer === 'new') {
-      location.href = `/?apply=form18&link=${encodeURIComponent(state.publicLink.id)}&v=20261014b`;
+      location.href = `/?apply=form18&link=${encodeURIComponent(state.publicLink.id)}&v=20261014c`;
     return;
   }
   if (!state.started) {
@@ -320,16 +320,16 @@ async function loadPublic() {
 async function boot() {
   const params = new URLSearchParams(location.search);
   if (params.get('apply') === 'form18') {
-    try { const flow = await import('./intake-mode.js?v=20261014b'); await flow.startIntake(); }
+    try { const flow = await import('./intake-mode.js?v=20261014c'); await flow.startIntake(); }
     catch (err) { root.innerHTML = `<div class="load-error"><h2>Secure application could not open</h2><p>${html(err.message)}</p></div>`; }
     return;
   }
   if (params.get('apply') === 'form18-beta') {
-    try { const flow = await import('./form18-mode.js?v=20261014b'); await flow.startForm18(); }
+    try { const flow = await import('./form18-mode.js?v=20261014c'); await flow.startForm18(); }
     catch (err) { root.innerHTML = `<div class="load-error"><h2>Beta application could not open</h2><p>${html(err.message)}</p></div>`; }
     return;
   }
-  if (cloudMode) { try { cloud = await import('./firebase-mode.js?v=20261014b'); await cloud.ready; } catch (err) { root.innerHTML = `<div class="load-error"><h2>Firebase connection failed</h2><p>${html(err.message)}</p></div>`; return; } }
+  if (cloudMode) { try { cloud = await import('./firebase-mode.js?v=20261014c'); await cloud.ready; } catch (err) { root.innerHTML = `<div class="load-error"><h2>Firebase connection failed</h2><p>${html(err.message)}</p></div>`; return; } }
   if (params.has('form')) loadPublic(); else loadAdmin();
 }
 boot();

@@ -120,8 +120,8 @@ test('released application is two pages and OCR flow stays on the beta route', (
   assert.match(firebaseSource,/storageBucket:\s*'ajaychevula-d2a22\.firebasestorage\.app'/);
   assert.match(firebaseSource,/getStorage\(app,\s*'gs:\/\/ajaychevula-d2a22\.firebasestorage\.app'\)/);
   assert.match(firebaseSource,/signInWithEmailAndPassword/);
-  assert.match(firebaseSource,/browserSessionPersistence/);
-  assert.match(firebaseSource,/setPersistence\(auth,\s*browserSessionPersistence\)/);
+  assert.match(firebaseSource,/inMemoryPersistence/);
+  assert.match(firebaseSource,/setPersistence\(auth,\s*inMemoryPersistence\)/);
   assert.match(firebaseSource,/createUserWithEmailAndPassword/);
   assert.match(firebaseSource,/adminLogins/);
   assert.match(firebaseSource,/usernameToEmail/);
