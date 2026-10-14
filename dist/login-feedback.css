@@ -1,0 +1,8 @@
+.login-divider{margin:16px 0;text-align:center;color:#718078;font-size:12px;font-weight:700}
+.login-progress{display:none;margin-top:20px;padding:14px;border:1px solid #d9e9dc;border-radius:13px;background:#f3f9f4}
+.login-card.is-loading .login-progress{display:block}
+.login-card.is-loading form,.login-card.is-loading .login-divider,.login-card.is-loading #googleLogin{opacity:.48;pointer-events:none}
+.login-progress-track{height:7px;background:#dfece1;border-radius:999px;overflow:hidden}
+.login-progress-track span{display:block;width:var(--login-progress,18%);height:100%;border-radius:inherit;background:linear-gradient(90deg,#17643d,#67aa7d);transition:width .45s ease}
+.login-progress strong{display:block;margin-top:10px;color:var(--green);font-size:12px}
+.login-progress small{display:block;color:var(--muted);font-size:11px;margin-top:3px}

@@ -91,6 +91,7 @@ test('form generation, public intake, link tracking and follow-up work together'
 
 test('released application is two pages and OCR flow stays on the beta route', () => {
   const appSource = fs.readFileSync(path.join(process.cwd(),'dist','app.js'),'utf8');
+  const indexSource = fs.readFileSync(path.join(process.cwd(),'dist','index.html'),'utf8');
   const intakeSource = fs.readFileSync(path.join(process.cwd(),'dist','intake-mode.js'),'utf8');
   assert.match(appSource, /apply'\) === 'form18'[\s\S]*intake-mode\.js/);
   assert.match(appSource, /apply'\) === 'form18-beta'[\s\S]*form18-mode\.js/);
@@ -122,9 +123,14 @@ test('released application is two pages and OCR flow stays on the beta route', (
   assert.match(firebaseSource,/createUserWithEmailAndPassword/);
   assert.match(firebaseSource,/adminLogins/);
   assert.match(firebaseSource,/usernameToEmail/);
+  assert.match(firebaseSource,/chevulaajayreddy\.03@gmail\.com/);
   assert.match(firebaseSource,/window\.open\('about:blank','_blank'\)/);
   assert.match(firebaseSource,/document\.body\.appendChild\(anchor\)/);
   assert.match(appSource,/Admin access/);
   assert.match(appSource,/Continue with Google/);
   assert.match(appSource,/Create admin/);
+  assert.match(appSource,/login-progress/);
+  assert.match(appSource,/Checking your secure access/);
+  assert.match(appSource,/Access confirmed\. Opening dashboard/);
+  assert.match(indexSource,/login-feedback\.css/);
 });

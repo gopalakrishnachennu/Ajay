@@ -3,7 +3,7 @@ service firebase.storage {
   match /b/{bucket}/o {
     function superAdmin() {
       return request.auth != null
-        && request.auth.token.email == 'gopalakrishnachennu@gmail.com'
+        && request.auth.token.email in ['gopalakrishnachennu@gmail.com', 'chevulaajayreddy.03@gmail.com']
         && request.auth.token.email_verified == true;
     }
     function admin() {

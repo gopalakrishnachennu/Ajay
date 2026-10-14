@@ -14,13 +14,13 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app, 'gs://ajaychevula-d2a22.firebasestorage.app');
-const ownerEmail = 'gopalakrishnachennu@gmail.com';
+const superAdminEmails = new Set(['gopalakrishnachennu@gmail.com','chevulaajayreddy.03@gmail.com']);
 let session=null;
 const usernameToEmail=username=>`${String(username||'').trim().toLowerCase().replace(/[^a-z0-9._-]/g,'')}@campaignos.local`;
 async function refreshSession(){
   const user=auth.currentUser;
   if(!user){session=null;return null;}
-  if(user.email===ownerEmail&&user.emailVerified){session={uid:user.uid,email:user.email,username:'Owner',role:'super_admin',isSuperAdmin:true};return session;}
+  if(superAdminEmails.has(String(user.email||'').toLowerCase())&&user.emailVerified){session={uid:user.uid,email:user.email,username:'Super admin',role:'super_admin',isSuperAdmin:true};return session;}
   const snap=await getDoc(doc(db,'admins',user.uid));
   if(!snap.exists()||snap.data().active!==true){await signOut(auth);session=null;throw Object.assign(new Error('This admin account is not active.'),{status:401});}
   session={uid:user.uid,email:user.email,username:snap.data().username||user.email,role:'admin',isSuperAdmin:false};return session;
