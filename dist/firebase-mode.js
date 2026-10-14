@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, inMemoryPersistence, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, getRedirectResult, setPersistence, browserSessionPersistence, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, writeBatch, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { getStorage, ref, getBlob, getDownloadURL } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js';
 
@@ -16,7 +16,14 @@ const db = getFirestore(app);
 const storage = getStorage(app, 'gs://ajaychevula-d2a22.firebasestorage.app');
 const superAdminEmails = new Set(['gopalakrishnachennu@gmail.com','chevulaajayreddy.03@gmail.com']);
 let session=null;
+const authIntentKey='campaignos.admin.explicit-login';
 const usernameToEmail=username=>`${String(username||'').trim().toLowerCase().replace(/[^a-z0-9._-]/g,'')}@campaignos.local`;
+const mobileBrowser=()=>/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+function markExplicitLogin(){
+  try { sessionStorage.setItem(authIntentKey,'1'); }
+  catch { throw new Error('Open this admin link in Safari or Chrome. WhatsApp’s in-app browser cannot complete secure Google sign-in.'); }
+}
+function hasExplicitLogin(){ try { return sessionStorage.getItem(authIntentKey)==='1'; } catch { return false; } }
 async function refreshSession(){
   const user=auth.currentUser;
   if(!user){session=null;return null;}
@@ -25,9 +32,13 @@ async function refreshSession(){
   if(!snap.exists()||snap.data().active!==true){await signOut(auth);session=null;throw Object.assign(new Error('This admin account is not active.'),{status:401});}
   session={uid:user.uid,email:user.email,username:snap.data().username||user.email,role:'admin',isSuperAdmin:false};return session;
 }
-// Every admin page load must begin at the login gate on a shared device.
+// Redirect-based mobile Google sign-in needs session storage, but only an
+// explicitly initiated login may restore an admin session in this tab.
 export const ready = (async () => {
-  await setPersistence(auth, inMemoryPersistence);
+  await setPersistence(auth, browserSessionPersistence);
+  let redirectResult=null;
+  try { redirectResult=await getRedirectResult(auth); } catch { await signOut(auth).catch(()=>{}); }
+  if(!hasExplicitLogin()&&!redirectResult?.user) await signOut(auth).catch(()=>{});
   return new Promise(resolve => onAuthStateChanged(auth, async () => { try{await refreshSession();}catch{}resolve(); }, () => resolve()));
 })();
 const uid = () => auth.currentUser;
@@ -76,11 +87,12 @@ export async function request(path, options = {}) {
   const method = options.method || 'GET';
   const input = body(options);
   if (parts[1] === 'auth' && parts[2] === 'login' && method === 'POST') {
+    markExplicitLogin();
     if(input.mode==='password'){
       const username=String(input.username||'').trim();
       if(!/^[A-Za-z0-9._-]{3,40}$/.test(username)||String(input.password||'').length<10)throw new Error('Enter your username and password.');
       await signInWithEmailAndPassword(auth,usernameToEmail(username),String(input.password));
-    }else{const provider = new GoogleAuthProvider(); provider.setCustomParameters({ prompt:'select_account' }); await signInWithPopup(auth, provider);}
+    }else{const provider = new GoogleAuthProvider(); provider.setCustomParameters({ prompt:'select_account' });if(mobileBrowser()){await signInWithRedirect(auth,provider);return {redirecting:true};}await signInWithPopup(auth, provider);}
     await refreshSession();admin();await recordLogin();return {...session};
   }
   if (parts[1] === 'auth' && parts[2] === 'logout' && method === 'POST') { await signOut(auth); return { ok:true }; }
