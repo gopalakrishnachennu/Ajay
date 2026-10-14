@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserSessionPersistence, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, writeBatch, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { getStorage, ref, getBlob, getDownloadURL } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js';
 
@@ -25,7 +25,11 @@ async function refreshSession(){
   if(!snap.exists()||snap.data().active!==true){await signOut(auth);session=null;throw Object.assign(new Error('This admin account is not active.'),{status:401});}
   session={uid:user.uid,email:user.email,username:snap.data().username||user.email,role:'admin',isSuperAdmin:false};return session;
 }
-export const ready = new Promise(resolve => onAuthStateChanged(auth, async () => { try{await refreshSession();}catch{}resolve(); }, () => resolve()));
+// Admin sessions should never survive a browser restart on a shared device.
+export const ready = (async () => {
+  await setPersistence(auth, browserSessionPersistence);
+  return new Promise(resolve => onAuthStateChanged(auth, async () => { try{await refreshSession();}catch{}resolve(); }, () => resolve()));
+})();
 const uid = () => auth.currentUser;
 const denied = () => Object.assign(new Error('Sign in with an approved admin account'), { status: 401 });
 function admin() { if (!session) throw denied(); }
